@@ -11,10 +11,11 @@ import { Bot, User, Send, Loader2, MessageSquare, Sparkles } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export function AIChatbot() {
-  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
+  const { messages, append, isLoading } = useChat({
     api: "/api/chat",
   })
 
+  const [input, setInput] = useState("")
   const [isExpanded, setIsExpanded] = useState(false)
 
   const suggestedQuestions = [
@@ -27,7 +28,14 @@ export function AIChatbot() {
   ]
 
   const handleSuggestedQuestion = (question: string) => {
-    handleInputChange({ target: { value: question } } as any)
+    setInput(question)
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!input.trim()) return
+    await append({ role: "user", content: input })
+    setInput("")
   }
 
   return (
@@ -38,7 +46,9 @@ export function AIChatbot() {
           AI Sentiment Assistant
           <Sparkles className="h-4 w-4 text-yellow-500" />
         </CardTitle>
-        <CardDescription>Ask questions about your sentiment analysis data and get AI-powered insights</CardDescription>
+        <CardDescription>
+          Ask questions about your sentiment analysis data and get AI-powered insights
+        </CardDescription>
       </CardHeader>
 
       {isExpanded && (
@@ -66,7 +76,7 @@ export function AIChatbot() {
                 </div>
               )}
 
-              {messages.map((message) => (
+              {messages.map((message:any) => (
                 <div
                   key={message.id}
                   className={cn(
@@ -89,7 +99,9 @@ export function AIChatbot() {
                         {message.role === "user" ? "You" : "AI Assistant"}
                       </Badge>
                     </div>
-                    <div className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</div>
+                    <div className="text-sm leading-relaxed whitespace-pre-wrap">
+                      {message.content}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -130,7 +142,7 @@ export function AIChatbot() {
           <form onSubmit={handleSubmit} className="flex gap-2">
             <Input
               value={input}
-              onChange={handleInputChange}
+              onChange={(e) => setInput(e.target.value)}
               placeholder="Ask about your sentiment data..."
               disabled={isLoading}
               className="flex-1"
