@@ -1,14 +1,12 @@
-import { streamText } from "ai"
-import { groq } from "@ai-sdk/groq"
+import { generateText } from "ai"   // ✅ from ai, not @ai-sdk/groq
+import { groq } from "@ai-sdk/groq" // ✅ import groq client
 import { createClient } from "@/lib/supabase/server"
 
 export async function POST(req: Request) {
   const { messages } = await req.json()
 
-  // Get recent analytics data to provide context
   const supabase = await createClient()
 
-  // Fetch recent sentiment data
   const { data: recentComments } = await supabase
     .from("sentiment_analysis")
     .select(`
@@ -26,46 +24,42 @@ export async function POST(req: Request) {
     .order("analyzed_at", { ascending: false })
     .limit(100)
 
-  // Calculate summary statistics
   const totalComments = recentComments?.length || 0
-  const sentimentCounts = recentComments?.reduce(
-    (acc, item) => {
-      acc[item.sentiment] = (acc[item.sentiment] || 0) + 1
-      return acc
-    },
-    { positive: 0, negative: 0, neutral: 0 } as Record<string, number>,
-  ) || { positive: 0, negative: 0, neutral: 0 }
 
-  const avgConfidence =
-    totalComments > 0 ? recentComments!.reduce((sum, item) => sum + item.confidence_score, 0) / totalComments : 0
-
-  // Get platform distribution
-  const platformCounts =
+  const sentimentCounts =
     recentComments?.reduce(
       (acc, item) => {
-        const platform = item.comments.platform
-        acc[platform] = (acc[platform] || 0) + 1
+        acc[item.sentiment] = (acc[item.sentiment] || 0) + 1
         return acc
       },
-      {} as Record<string, number>,
-    ) || {}
+      { positive: 0, negative: 0, neutral: 0 } as Record<string, number>
+    ) || { positive: 0, negative: 0, neutral: 0 }
 
-  // Extract top keywords
-  const allKeywords = recentComments?.flatMap((item) => item.keywords || []) || []
-  const keywordCounts = allKeywords.reduce(
-    (acc, keyword) => {
-      acc[keyword] = (acc[keyword] || 0) + 1
+  const avgConfidence =
+    totalComments > 0
+      ? recentComments!.reduce((sum, item) => sum + item.confidence_score, 0) / totalComments
+      : 0
+
+  const platformCounts =
+    recentComments?.reduce((acc, item) => {
+      const platform = item.comments?.[0]?.platform
+      if (platform) {
+        acc[platform] = (acc[platform] || 0) + 1
+      }
       return acc
-    },
-    {} as Record<string, number>,
-  )
+    }, {} as Record<string, number>) || {}
+
+  const allKeywords = recentComments?.flatMap((item) => item.keywords || []) || []
+  const keywordCounts = allKeywords.reduce((acc, keyword) => {
+    acc[keyword] = (acc[keyword] || 0) + 1
+    return acc
+  }, {} as Record<string, number>)
 
   const topKeywords = Object.entries(keywordCounts)
-    .sort(([, a], [, b]) => b - a)
+    .sort(([, a], [, b]) => (b as number) - (a as number))
     .slice(0, 10)
     .map(([keyword]) => keyword)
 
-  // Create context for the AI
   const analyticsContext = `
 Current Sentiment Analysis Data (Last 7 days):
 - Total Comments: ${totalComments}
@@ -74,7 +68,7 @@ Current Sentiment Analysis Data (Last 7 days):
 - Neutral: ${sentimentCounts.neutral} (${totalComments > 0 ? Math.round((sentimentCounts.neutral / totalComments) * 100) : 0}%)
 - Average Confidence: ${Math.round(avgConfidence * 100)}%
 - Top Platforms: ${Object.entries(platformCounts)
-    .sort(([, a], [, b]) => b - a)
+    .sort(([, a], [, b]) => (b as number) - (a as number))
     .slice(0, 3)
     .map(([platform, count]) => `${platform} (${count})`)
     .join(", ")}
@@ -84,31 +78,32 @@ Recent Sample Comments:
 ${
   recentComments
     ?.slice(0, 5)
-    .map((item) => `- [${item.sentiment.toUpperCase()}] ${item.comments.content.slice(0, 100)}...`)
+    .map((item) => {
+      const c = item.comments?.[0]
+      return c ? `- [${item.sentiment.toUpperCase()}] ${c.content.slice(0, 100)}...` : ""
+    })
     .join("\n") || "No recent comments"
 }
 `
 
-  const result = await streamText({
+  // ✅ Correct way to call Groq
+  const result = await generateText({
     model: groq("llama-3.1-70b-versatile"),
-    messages,
     system: `You are an AI assistant specialized in social media sentiment analysis. You help users understand their sentiment analysis data, provide insights, and answer questions about social media comments and trends.
 
 You have access to the following current data:
 ${analyticsContext}
 
-Guidelines:
-- Provide helpful insights about sentiment trends and patterns
-- Explain sentiment analysis concepts when asked
-- Suggest actionable recommendations based on the data
-- Be conversational but professional
-- If asked about specific data not in the context, acknowledge the limitation
-- Help users understand what the sentiment scores and confidence levels mean
-- Provide context about why certain sentiments might be occurring
-- Suggest ways to improve sentiment or address negative feedback
-
-Always base your responses on the actual data provided and be specific with numbers and percentages when relevant.`,
+Always provide numbers/percentages when relevant and stay professional but conversational.`,
+    prompt: messages?.[messages.length - 1]?.content || "" // last user message
   })
 
-  return result.toDataStreamResponse()
+  return new Response(
+    JSON.stringify({
+      id: Date.now().toString(),
+      role: "assistant",
+      content: result.text,
+    }),
+    { headers: { "Content-Type": "application/json" } }
+  )
 }
