@@ -9,6 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { Bot, User, Send, Loader2, MessageSquare, Sparkles } from "lucide-react"
 import { cn } from "@/lib/utils"
+import type { ChatMessage } from "ai/react"
 
 export function AIChatbot() {
   const { messages, append, isLoading } = useChat({
@@ -76,7 +77,7 @@ export function AIChatbot() {
                 </div>
               )}
 
-              {messages.map((message:any) => (
+              {messages.map((message: ChatMessage) => (
                 <div
                   key={message.id}
                   className={cn(
