@@ -1,6 +1,7 @@
-import { generateObject } from "ai"
-import { groq } from "@ai-sdk/groq"
+import { GoogleGenerativeAI } from "@google/generative-ai"
 import { z } from "zod"
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
 
 const translationSchema = z.object({
   translatedText: z.string(),
@@ -52,7 +53,13 @@ const languageNames: Record<string, string> = {
   me: "Montenegrin",
   uk: "Ukrainian",
   be: "Belarusian",
-  ka: "Georgian",
+  hy: "Armenian",
+  az: "Azerbaijani",
+  kk: "Kazakh",
+  ky: "Kyrgyz",
+  uz: "Uzbek",
+  tg: "Tajik",
+  mn: "Mongolian",
   am: "Amharic",
   sw: "Swahili",
   zu: "Zulu",
@@ -79,39 +86,39 @@ const languageNames: Record<string, string> = {
   my: "Myanmar",
   km: "Khmer",
   lo: "Lao",
-  ka: "Georgian",
-  hy: "Armenian",
-  az: "Azerbaijani",
-  kk: "Kazakh",
-  ky: "Kyrgyz",
-  uz: "Uzbek",
-  tg: "Tajik",
-  mn: "Mongolian",
 }
 
-export async function translateText(text: string, targetLanguage = "en"): Promise<TranslationResult> {
+export async function translateText(
+  text: string,
+  targetLanguage = "en"
+): Promise<TranslationResult> {
   try {
     const targetLanguageName = languageNames[targetLanguage] || "English"
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" })
 
-    const { object } = await generateObject({
-      model: groq("llama-3.1-70b-versatile"),
-      schema: translationSchema,
-      prompt: `Translate the following text to ${targetLanguageName} and detect the original language:
+    const prompt = `Translate the following text to ${targetLanguageName}.
+Also detect the original language and provide confidence.
 
 Text: "${text}"
 
-Please provide:
-1. The translated text in ${targetLanguageName}
-2. The detected original language (use ISO 639-1 code like 'en', 'es', 'fr', etc.)
-3. Your confidence level in the translation (0-1)
+Respond ONLY as JSON in this format:
+{
+  "translatedText": "...",
+  "detectedLanguage": "en",
+  "confidence": 0.95
+}`
 
-If the text is already in ${targetLanguageName}, return the original text and indicate that no translation was needed.`,
-    })
+    const result = await model.generateContent(prompt)
+    const raw = result.response.text().trim()
 
-    return object
+    const parsed = translationSchema.safeParse(JSON.parse(raw))
+    if (!parsed.success) {
+      throw new Error("Failed to parse translation result")
+    }
+
+    return parsed.data
   } catch (error) {
     console.error("Translation failed:", error)
-    // Fallback response
     return {
       translatedText: text,
       detectedLanguage: "unknown",
@@ -120,30 +127,38 @@ If the text is already in ${targetLanguageName}, return the original text and in
   }
 }
 
-export async function detectLanguage(text: string): Promise<{ language: string; confidence: number }> {
+export async function detectLanguage(
+  text: string
+): Promise<{ language: string; confidence: number }> {
   try {
-    const { object } = await generateObject({
-      model: groq("llama-3.1-70b-versatile"),
-      schema: z.object({
-        language: z.string(),
-        confidence: z.number().min(0).max(1),
-      }),
-      prompt: `Detect the language of this text and provide your confidence level:
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" })
 
-Text: "${text}"
+    const prompt = `Detect the language of the following text.
+Respond ONLY as JSON:
+{
+  "language": "en",
+  "confidence": 0.9
+}
 
-Respond with:
-1. The language code (ISO 639-1 format like 'en', 'es', 'fr', etc.)
-2. Your confidence level (0-1)`,
+Text: "${text}"`
+
+    const result = await model.generateContent(prompt)
+    const raw = result.response.text().trim()
+
+    const schema = z.object({
+      language: z.string(),
+      confidence: z.number().min(0).max(1),
     })
 
-    return object
+    const parsed = schema.safeParse(JSON.parse(raw))
+    if (!parsed.success) {
+      throw new Error("Failed to parse language detection result")
+    }
+
+    return parsed.data
   } catch (error) {
     console.error("Language detection failed:", error)
-    return {
-      language: "en",
-      confidence: 0.5,
-    }
+    return { language: "en", confidence: 0.5 }
   }
 }
 

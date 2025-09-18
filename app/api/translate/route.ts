@@ -7,22 +7,28 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { text, targetLanguage, commentId, action = "translate" } = body
 
-    if (!text) {
+    // Validate required text
+    if (!text || text.trim().length === 0) {
       return NextResponse.json({ error: "Text is required" }, { status: 400 })
     }
 
+    let result
+
     if (action === "detect") {
-      const result = await detectLanguage(text)
+      result = await detectLanguage(text)
       return NextResponse.json({ result })
     }
 
     if (!targetLanguage) {
-      return NextResponse.json({ error: "Target language is required for translation" }, { status: 400 })
+      return NextResponse.json(
+        { error: "Target language is required for translation" },
+        { status: 400 },
+      )
     }
 
-    const result = await translateText(text, targetLanguage)
+    result = await translateText(text, targetLanguage)
 
-    // If commentId is provided, update the comment with translation
+    // If commentId is provided, persist translation in DB
     if (commentId) {
       const supabase = await createClient()
 
@@ -35,14 +41,20 @@ export async function POST(request: NextRequest) {
         .eq("id", commentId)
 
       if (error) {
-        console.error("Failed to update comment with translation:", error)
-        return NextResponse.json({ error: "Failed to save translation" }, { status: 500 })
+        console.error("❌ Failed to update comment with translation:", error)
+        return NextResponse.json(
+          { error: "Failed to save translation" },
+          { status: 500 },
+        )
       }
     }
 
     return NextResponse.json({ result })
   } catch (error) {
-    console.error("Translation API error:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    console.error("❌ Translation API error:", error)
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    )
   }
 }
