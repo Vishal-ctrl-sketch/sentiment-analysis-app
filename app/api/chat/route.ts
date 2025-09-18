@@ -1,11 +1,11 @@
 import { generateText, type LanguageModelV1 } from "ai"  // ✅ V1 API
-import { groq } from "@ai-sdk/groq"
+import { google } from "@ai-sdk/google"  // ✅ Gemini provider
 import { createClient } from "@/lib/supabase/server"
 
 async function runGenerateText(prompt: string) {
   return generateText({
-    // Cast the model to LanguageModelV1 so TS accepts it
-    model: groq("llama-3.1-70b-versatile") as unknown as LanguageModelV1,
+    // Gemini model (multimodal/text model)
+    model: google("gemini-1.5-flash") as unknown as LanguageModelV1,
     prompt,
   })
 }

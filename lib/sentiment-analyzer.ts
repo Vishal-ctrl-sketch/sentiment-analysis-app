@@ -1,7 +1,7 @@
-import { generateObject } from "ai"
-import { groq } from "@ai-sdk/groq"
+import { generateObject, type LanguageModelV1 } from "ai"
 import { z } from "zod"
 
+// define your schema
 const sentimentSchema = z.object({
   sentiment: z.enum(["positive", "negative", "neutral"]),
   confidence: z.number().min(0).max(1),
@@ -19,13 +19,15 @@ const sentimentSchema = z.object({
 
 export type SentimentResult = z.infer<typeof sentimentSchema>
 
-export async function analyzeSentiment(text: string): Promise<SentimentResult> {
-  try {
-    const { object } = await generateObject({
-      model: groq("llama-3.1-70b-versatile"),
-      schema: sentimentSchema,
-      prompt: `Analyze the sentiment of this social media comment: "${text}"
+async function runGenerateSentiment(text: string) {
+  // Cast the model string to LanguageModelV1
+  const model = "llama-3.1-70b-versatile" as unknown as LanguageModelV1
 
+  const { object } = await generateObject({
+    model,
+    schema: sentimentSchema,
+    prompt: `Analyze the sentiment of this social media comment: "${text}"
+    
 Please provide:
 1. Overall sentiment (positive, negative, or neutral)
 2. Confidence score (0-1)
@@ -34,12 +36,16 @@ Please provide:
 5. Brief reasoning for your analysis
 
 Be objective and consider context, sarcasm, and nuanced language.`,
-    })
+  })
 
-    return object
+  return object
+}
+
+export async function analyzeSentiment(text: string): Promise<SentimentResult> {
+  try {
+    return await runGenerateSentiment(text)
   } catch (error) {
     console.error("Sentiment analysis failed:", error)
-    // Fallback to neutral sentiment
     return {
       sentiment: "neutral",
       confidence: 0.5,
