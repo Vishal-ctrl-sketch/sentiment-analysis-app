@@ -1,19 +1,18 @@
-import { generateText, type LanguageModelV1 } from "ai"   // ✅ only V1 available in your version
+import { generateText, type LanguageModelV1 } from "ai"
 import { groq } from "@ai-sdk/groq"
 import { createClient } from "@/lib/supabase/server"
 
-// For now, just alias AnyModel to LanguageModelV1
 type AnyModel = LanguageModelV1
 
-async function runGenerateText(settings: { model: AnyModel; messages: any }) {
+async function runGenerateText(prompt: string) {
   return generateText({
-    ...settings,
+    model: groq("llama-3.1-70b-versatile") as unknown as AnyModel,
+    prompt, // ✅ single prompt string
   })
 }
 
 export async function POST(req: Request) {
   const { messages } = await req.json()
-
   const supabase = await createClient()
 
   const { data: recentComments } = await supabase
@@ -95,24 +94,22 @@ ${
 }
 `
 
-  // ✅ generateText with V1
-  const result = await runGenerateText({
-    model: groq("llama-3.1-70b-versatile") as unknown as LanguageModelV1,
-    messages: [
-      {
-        role: "system",
-        content: `You are an AI assistant specialized in social media sentiment analysis...
-You help users understand their sentiment analysis data, provide insights, 
+  // Grab the latest user message
+  const userMessage = messages?.at(-1)?.content ?? "Hello, give me insights."
+
+  // Combine context + user question into one prompt
+  const prompt = `
+You are an AI assistant specialized in social media sentiment analysis.
+You help users understand their sentiment analysis data, provide insights,
 and answer questions about social media comments and trends.
 
 You have access to the following current data:
 ${analyticsContext}
 
-Always provide numbers/percentages when relevant and stay professional but conversational.`,
-      },
-      ...(messages || []),
-    ],
-  })
+User question: ${userMessage}
+`
+
+  const result = await runGenerateText(prompt)
 
   return new Response(
     JSON.stringify({
