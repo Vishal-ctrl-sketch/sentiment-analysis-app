@@ -17,6 +17,7 @@ import {
   LineChart,
   Line,
 } from "recharts"
+import type { PieLabelRenderProps } from "recharts"
 import { apiClient } from "@/lib/api-client"
 
 interface ChartData {
@@ -37,6 +38,12 @@ const SENTIMENT_COLORS = {
   positive: "#22c55e",
   negative: "#ef4444",
   neutral: "#6b7280",
+}
+
+// ✅ Type-safe label renderer
+const renderPieLabel = ({ name, percent }: PieLabelRenderProps): React.ReactNode => {
+  if (percent == null) return name ?? ""
+  return `${name ?? ""} ${(percent * 100).toFixed(0)}%`
 }
 
 export function SentimentCharts() {
@@ -161,10 +168,7 @@ export function SentimentCharts() {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, percent }) => {
-  if (typeof percent !== "number") return name;
-  return `${name} ${(percent * 100).toFixed(0)}%`;
-}}
+                  label={renderPieLabel as any} // ✅ minimal cast here
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="value"
