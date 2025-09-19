@@ -107,7 +107,7 @@ export function AnalyticsOverview() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Platform</label>
-              <Select value={filters.platform} onValueChange={(value) => setFilters({ ...filters, platform: value })}>
+              <Select value={filters.platform} onValueChange={(value: string) => setFilters({ ...filters, platform: value })}>
                 <SelectTrigger>
                   <SelectValue placeholder="All platforms" />
                 </SelectTrigger>
@@ -126,7 +126,7 @@ export function AnalyticsOverview() {
               <label className="text-sm font-medium">Time Period</label>
               <Select
                 value={filters.days.toString()}
-                onValueChange={(value) => setFilters({ ...filters, days: Number.parseInt(value) })}
+                onValueChange={(value: string) => setFilters({ ...filters, days: Number.parseInt(value) })}
               >
                 <SelectTrigger>
                   <SelectValue />
