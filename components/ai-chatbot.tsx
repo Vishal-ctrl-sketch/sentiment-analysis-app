@@ -9,11 +9,10 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { Bot, User, Send, Loader2, MessageSquare, Sparkles } from "lucide-react"
 import { cn } from "@/lib/utils"
-import type { ChatMessage } from "ai/react"
 
 export function AIChatbot() {
   const { messages, append, isLoading } = useChat({
-    api: "/api/chat",
+    api: "/api/chat", // ✅ points to your backend
   })
 
   const [input, setInput] = useState("")
@@ -32,10 +31,10 @@ export function AIChatbot() {
     setInput(question)
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!input.trim()) return
-    await append({ role: "user", content: input })
+    append({ role: "user", content: input }) // ✅ no need to await in V1
     setInput("")
   }
 
@@ -77,7 +76,7 @@ export function AIChatbot() {
                 </div>
               )}
 
-              {messages.map((message: ChatMessage) => (
+              {messages.map((message) => (
                 <div
                   key={message.id}
                   className={cn(

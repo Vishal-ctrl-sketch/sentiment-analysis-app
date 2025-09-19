@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS comments (
   collected_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   language_code VARCHAR(10) DEFAULT 'en',
   translated_content TEXT, -- For multilingual support
+  metadata JSONB DEFAULT '{}', -- Store platform-specific data (likes, shares, etc.)
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -21,8 +22,8 @@ CREATE TABLE IF NOT EXISTS sentiment_analysis (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   comment_id UUID NOT NULL REFERENCES comments(id) ON DELETE CASCADE,
   sentiment VARCHAR(20) NOT NULL, -- 'positive', 'negative', 'neutral'
-  confidence_score DECIMAL(3,2) NOT NULL, -- 0.00 to 1.00
-  emotions JSONB, -- Store detailed emotion analysis
+  confidence_score NUMERIC(4,3) NOT NULL CHECK (confidence_score >= 0 AND confidence_score <= 1),
+  emotions JSONB, -- Store detailed emotion analysis (e.g., {"joy":0.75,"anger":0.10})
   keywords TEXT[], -- Array of extracted keywords
   analyzed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   model_version VARCHAR(50) DEFAULT 'groq-v1',
@@ -42,7 +43,7 @@ CREATE TABLE IF NOT EXISTS comment_topics (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   comment_id UUID NOT NULL REFERENCES comments(id) ON DELETE CASCADE,
   topic_id UUID NOT NULL REFERENCES topics(id) ON DELETE CASCADE,
-  relevance_score DECIMAL(3,2) DEFAULT 1.00,
+  relevance_score NUMERIC(4,3) DEFAULT 1.000 CHECK (relevance_score >= 0 AND relevance_score <= 1),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   UNIQUE(comment_id, topic_id)
 );
@@ -57,7 +58,7 @@ CREATE TABLE IF NOT EXISTS sentiment_summary (
   negative_count INTEGER DEFAULT 0,
   neutral_count INTEGER DEFAULT 0,
   total_comments INTEGER DEFAULT 0,
-  avg_confidence DECIMAL(3,2),
+  avg_confidence NUMERIC(4,3) CHECK (avg_confidence >= 0 AND avg_confidence <= 1),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   UNIQUE(date, platform, topic_id)
@@ -74,6 +75,7 @@ CREATE INDEX IF NOT EXISTS idx_comment_topics_comment_id ON comment_topics(comme
 CREATE INDEX IF NOT EXISTS idx_comment_topics_topic_id ON comment_topics(topic_id);
 CREATE INDEX IF NOT EXISTS idx_sentiment_summary_date ON sentiment_summary(date);
 CREATE INDEX IF NOT EXISTS idx_sentiment_summary_platform ON sentiment_summary(platform);
+CREATE INDEX IF NOT EXISTS idx_sentiment_summary_composite ON sentiment_summary(date, platform, topic_id);
 
 -- Insert some default topics
 INSERT INTO topics (name, description) VALUES 
