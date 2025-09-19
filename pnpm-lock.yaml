@@ -8,12 +8,15 @@ importers:
 
   .:
     dependencies:
-      '@ai-sdk/groq':
-        specifier: ^2.0.19
-        version: 2.0.19(zod@3.25.76)
+      '@ai-sdk/google':
+        specifier: ^2.0.14
+        version: 2.0.14(zod@3.25.76)
       '@geist-ui/react':
         specifier: ^2.2.5
         version: 2.2.5(react-dom@18.0.0(react@18.0.0))(react@18.0.0)
+      '@google/generative-ai':
+        specifier: ^0.24.1
+        version: 0.24.1
       '@hookform/resolvers':
         specifier: ^3.10.0
         version: 3.10.0(react-hook-form@7.60.0(react@18.0.0))
@@ -207,8 +210,8 @@ importers:
 
 packages:
 
-  '@ai-sdk/groq@2.0.19':
-    resolution: {integrity: sha512-VegT0g1X7b2zDYOQvBx1YzKdnBtkyIsGnUBDW4JOft88jv0vUe+sE1H9cvRbKgt2Pd0970JuRM9Ok9D4WYP4+A==}
+  '@ai-sdk/google@2.0.14':
+    resolution: {integrity: sha512-OCBBkEUq1RNLkbJuD+ejqGsWDD0M5nRyuFWDchwylxy0J4HSsAiGNhutNYVTdnqmNw+r9LyZlkyZ1P4YfAfLdg==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4
@@ -375,6 +378,10 @@ packages:
     peerDependencies:
       react: '>=16.9.0'
       react-dom: '>=16.9.0'
+
+  '@google/generative-ai@0.24.1':
+    resolution: {integrity: sha512-MqO+MLfM6kjxcKoy0p1wRzG3b4ZZXtPI+z2IE26UogS2Cm/XHO+7gGRBh6gcJsOiIVoH93UwKvW4HdgiOZCy9Q==}
+    engines: {node: '>=18.0.0'}
 
   '@hookform/resolvers@3.10.0':
     resolution: {integrity: sha512-79Dv+3mDF7i+2ajj7SkypSKHhl1cbln1OGavqrsF7p6mbUv11xpqpacPsGDCTRvCSjEEIez2ef1NveSVL3b0Ag==}
@@ -2456,7 +2463,7 @@ packages:
 
 snapshots:
 
-  '@ai-sdk/groq@2.0.19(zod@3.25.76)':
+  '@ai-sdk/google@2.0.14(zod@3.25.76)':
     dependencies:
       '@ai-sdk/provider': 2.0.0
       '@ai-sdk/provider-utils': 3.0.9(zod@3.25.76)
@@ -2616,6 +2623,8 @@ snapshots:
       '@babel/runtime': 7.28.4
       react: 18.0.0
       react-dom: 18.0.0(react@18.0.0)
+
+  '@google/generative-ai@0.24.1': {}
 
   '@hookform/resolvers@3.10.0(react-hook-form@7.60.0(react@18.0.0))':
     dependencies:
