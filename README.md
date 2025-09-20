@@ -11,7 +11,7 @@ To run this project locally, follow these steps:
 Open your terminal or command prompt and run the following command to clone the project to your local machine:
 
 ```bash
-git clone [https://github.com/Vishal-ctrl-sketch/sentiment-analysis-app.git](https://github.com/Vishal-ctrl-sketch/sentiment-analysis-app.git)
+git clone https://github.com/Vishal-ctrl-sketch/sentiment-analysis-app.git
 ```
 
 ### 2. Navigate to the project directory
