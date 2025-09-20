@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@ai-sdk/google": "^2.0.14",
+    "@ai-sdk/provider-utils": "^3.0.9",
     "@geist-ui/react": "^2.2.5",
     "@google/generative-ai": "^0.24.1",
     "@hookform/resolvers": "^3.10.0",
@@ -72,6 +73,7 @@
     "@types/node": "^22",
     "@types/react": "^18.3.24",
     "@types/react-dom": "^18",
+    "concurrently": "^9.2.1",
     "postcss": "^8.5",
     "stylelint-config-tailwindcss": "^1.0.0",
     "tailwindcss": "^4.1.9",
