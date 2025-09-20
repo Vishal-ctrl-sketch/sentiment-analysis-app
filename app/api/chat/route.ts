@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { generateText, type LanguageModelV1 } from "ai"
+import { generateText, type LanguageModel } from "ai"
 import { createGoogleGenerativeAI } from "@ai-sdk/google"
 import { createClient } from "@/lib/supabase/server"
 import { env } from "@/lib/env"
@@ -14,7 +14,7 @@ const google = createGoogleGenerativeAI({ apiKey: env.googleApiKey })
 
 async function runGenerateText(prompt: string) {
   return generateText({
-    model: google("gemini-1.5-flash") as unknown as LanguageModelV1,
+    model: google("gemini-1.5-flash") as unknown as LanguageModel,
     prompt,
   })
 }
