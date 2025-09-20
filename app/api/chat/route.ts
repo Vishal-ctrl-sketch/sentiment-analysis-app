@@ -1,14 +1,15 @@
-// /app/api/chat/route.ts
 import { type NextRequest, NextResponse } from "next/server"
 import { generateText, type LanguageModelV1 } from "ai"
 import { createGoogleGenerativeAI } from "@ai-sdk/google"
 import { createClient } from "@/lib/supabase/server"
-import { env } from "@/lib/env" // ✅ central env loader
+import { env } from "@/lib/env"
 
-// ✅ Google provider (with API key check)
+// ✅ Validate Google API key at startup
 if (!env.googleApiKey) {
   throw new Error("❌ Missing GOOGLE_GENERATIVE_AI_API_KEY in environment")
 }
+
+// ✅ Create Google provider with API key
 const google = createGoogleGenerativeAI({ apiKey: env.googleApiKey })
 
 async function runGenerateText(prompt: string) {
@@ -23,7 +24,7 @@ export async function POST(req: NextRequest) {
     const { messages } = await req.json()
     const supabase = await createClient()
 
-    // ✅ Query recent sentiment analysis data
+    // --- Fetch recent sentiment analysis data ---
     const { data: recentComments, error: supabaseError } = await supabase
       .from("sentiment_analysis")
       .select(`
@@ -43,26 +44,25 @@ export async function POST(req: NextRequest) {
 
     if (supabaseError) {
       console.error("❌ Supabase error:", supabaseError.message)
-      return NextResponse.json(
-        { error: "Database query failed" },
-        { status: 500 },
-      )
+      return NextResponse.json({ error: "Database query failed" }, { status: 500 })
     }
 
-    // --- Analytics processing ---
+    // --- Analytics calculations ---
     const totalComments = recentComments?.length || 0
     const sentimentCounts =
-      recentComments?.reduce(
-        (acc, item) => {
-          acc[item.sentiment] = (acc[item.sentiment] || 0) + 1
-          return acc
-        },
-        { positive: 0, negative: 0, neutral: 0 } as Record<string, number>,
-      ) ?? { positive: 0, negative: 0, neutral: 0 }
+      recentComments?.reduce((acc, item) => {
+        acc[item.sentiment] = (acc[item.sentiment] || 0) + 1
+        return acc
+      }, { positive: 0, negative: 0, neutral: 0 } as Record<string, number>) ?? {
+        positive: 0,
+        negative: 0,
+        neutral: 0,
+      }
 
     const avgConfidence =
       totalComments > 0
-        ? recentComments!.reduce((sum, item) => sum + item.confidence_score, 0) / totalComments
+        ? recentComments!.reduce((sum, item) => sum + item.confidence_score, 0) /
+          totalComments
         : 0
 
     const platformCounts =
@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
       .slice(0, 10)
       .map(([keyword]) => keyword)
 
-    // --- Context for AI ---
+    // --- Analytics context for AI ---
     const analyticsContext = `
 Current Sentiment Analysis Data (Last 7 days):
 - Total Comments: ${totalComments}
@@ -138,11 +138,12 @@ User question: ${userMessage}
         messages: [
           {
             role: "assistant",
-            content: "⚠️ Sorry, I couldn’t process your request. Please check your configuration.",
+            content:
+              "⚠️ Sorry, I couldn’t process your request. Please check your configuration.",
           },
         ],
       },
-      { status: 500 },
+      { status: 500 }
     )
   }
 }
