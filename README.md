@@ -1,30 +1,54 @@
-# Sentiment analysis app
-
-*Automatically synced with your [v0.app](https://v0.app) deployments*
-
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/vishal-ctrl-sketchs-projects/v0-sentiment-analysis-app)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.app-black?style=for-the-badge)](https://v0.app/chat/projects/RWsxgIUtpOm)
+# Sentiment Analysis App
+*This repository is for the sentiment analysis application.*
 
 ## Overview
+This is a sentiment analysis application built with modern web technologies. The frontend is developed using React.js, while the backend is powered by Node.js. The application allows users to input text and receive sentiment analysis results, indicating whether the sentiment is positive, negative, or neutral.
 
-This repository will stay in sync with your deployed chats on [v0.app](https://v0.app).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.app](https://v0.app).
+## Getting Started
+To run this project locally, follow these steps:
 
-## Deployment
+### 1. Clone the repository
+Open your terminal or command prompt and run the following command to clone the project to your local machine:
 
-Your project is live at:
+```bash
+git clone [https://github.com/Vishal-ctrl-sketch/sentiment-analysis-app.git](https://github.com/Vishal-ctrl-sketch/sentiment-analysis-app.git)
+```
 
-**[https://vercel.com/vishal-ctrl-sketchs-projects/v0-sentiment-analysis-app](https://vercel.com/vishal-ctrl-sketchs-projects/v0-sentiment-analysis-app)**
+### 2. Navigate to the project directory
+Change your current directory to the project directory:
 
-## Build your app
+```bash
+cd sentiment-analysis-app
+```
 
-Continue building your app on:
+### 3. Install dependencies
+Make sure you have Node.js installed on your machine.
+Install the required dependencies using npm:
 
-**[https://v0.app/chat/projects/RWsxgIUtpOm](https://v0.app/chat/projects/RWsxgIUtpOm)**
+```bash
+npm install
+```
 
-## How It Works
+### 4. Run the application
+Start the application by running the following command:
+```bash
+npm run build
+```
 
-1. Create and modify your project using [v0.app](https://v0.app)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+Then, start the server:
+```bash
+npm start
+```
+
+The application will be accessible at `http://localhost:3000`.
+Open your web browser and navigate to `http://localhost:3000` to access the application.
+
+### 5. Usage
+Once the application is running, you can enter text into the input field and click the "Analyze" button to see the sentiment analysis results.
+The application will display whether the sentiment is positive, negative, or neutral.
+
+### 6. Stop the application
+To stop the application, go back to your terminal or command prompt and press `Ctrl + C`.
+This will terminate the server and stop the application.
+
+*P.S: The frontend works properly but the backend is not working fine. 😢*
