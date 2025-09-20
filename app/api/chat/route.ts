@@ -1,22 +1,30 @@
-import { generateText, type LanguageModelV1 } from "ai"  // ✅ V1 API
-import { google } from "@ai-sdk/google"  // ✅ Gemini provider
+// /app/api/chat/route.ts
+import { type NextRequest, NextResponse } from "next/server"
+import { generateText, type LanguageModelV1 } from "ai"
+import { createGoogleGenerativeAI } from "@ai-sdk/google"
 import { createClient } from "@/lib/supabase/server"
+import { env } from "@/lib/env" // ✅ central env loader
+
+// ✅ Google provider (with API key check)
+if (!env.googleApiKey) {
+  throw new Error("❌ Missing GOOGLE_GENERATIVE_AI_API_KEY in environment")
+}
+const google = createGoogleGenerativeAI({ apiKey: env.googleApiKey })
 
 async function runGenerateText(prompt: string) {
   return generateText({
-    // Gemini model (multimodal/text model)
     model: google("gemini-1.5-flash") as unknown as LanguageModelV1,
     prompt,
   })
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const { messages } = await req.json()
     const supabase = await createClient()
 
-    // Fetch analytics context
-    const { data: recentComments } = await supabase
+    // ✅ Query recent sentiment analysis data
+    const { data: recentComments, error: supabaseError } = await supabase
       .from("sentiment_analysis")
       .select(`
         sentiment,
@@ -33,6 +41,15 @@ export async function POST(req: Request) {
       .order("analyzed_at", { ascending: false })
       .limit(100)
 
+    if (supabaseError) {
+      console.error("❌ Supabase error:", supabaseError.message)
+      return NextResponse.json(
+        { error: "Database query failed" },
+        { status: 500 },
+      )
+    }
+
+    // --- Analytics processing ---
     const totalComments = recentComments?.length || 0
     const sentimentCounts =
       recentComments?.reduce(
@@ -40,13 +57,12 @@ export async function POST(req: Request) {
           acc[item.sentiment] = (acc[item.sentiment] || 0) + 1
           return acc
         },
-        { positive: 0, negative: 0, neutral: 0 } as Record<string, number>
-      ) || { positive: 0, negative: 0, neutral: 0 }
+        { positive: 0, negative: 0, neutral: 0 } as Record<string, number>,
+      ) ?? { positive: 0, negative: 0, neutral: 0 }
 
     const avgConfidence =
       totalComments > 0
-        ? recentComments!.reduce((sum, item) => sum + item.confidence_score, 0) /
-          totalComments
+        ? recentComments!.reduce((sum, item) => sum + item.confidence_score, 0) / totalComments
         : 0
 
     const platformCounts =
@@ -54,7 +70,7 @@ export async function POST(req: Request) {
         const platform = item.comments?.[0]?.platform
         if (platform) acc[platform] = (acc[platform] || 0) + 1
         return acc
-      }, {} as Record<string, number>) || {}
+      }, {} as Record<string, number>) ?? {}
 
     const allKeywords = recentComments?.flatMap((item) => item.keywords || []) || []
     const keywordCounts = allKeywords.reduce((acc, keyword) => {
@@ -67,6 +83,7 @@ export async function POST(req: Request) {
       .slice(0, 10)
       .map(([keyword]) => keyword)
 
+    // --- Context for AI ---
     const analyticsContext = `
 Current Sentiment Analysis Data (Last 7 days):
 - Total Comments: ${totalComments}
@@ -83,18 +100,15 @@ Current Sentiment Analysis Data (Last 7 days):
 
 Recent Sample Comments:
 ${
-  recentComments
-    ?.slice(0, 5)
-    .map((item) => {
-      const c = item.comments?.[0]
-      return c ? `- [${item.sentiment.toUpperCase()}] ${c.content.slice(0, 100)}...` : ""
-    })
-    .join("\n") || "No recent comments"
+  recentComments?.slice(0, 5).map((item) => {
+    const c = item.comments?.[0]
+    return c ? `- [${item.sentiment.toUpperCase()}] ${c.content.slice(0, 100)}...` : ""
+  }).join("\n") || "No recent comments"
 }
 `
 
+    // --- User prompt ---
     const userMessage = messages?.at(-1)?.content ?? "Hello, give me insights."
-
     const prompt = `
 You are an AI assistant specialized in social media sentiment analysis.
 You help users understand their sentiment analysis data, provide insights,
@@ -108,31 +122,27 @@ User question: ${userMessage}
 
     const result = await runGenerateText(prompt)
 
-    return new Response(
-      JSON.stringify({
-        messages: [
-          {
-            id: Date.now().toString(),
-            role: "assistant",
-            content: result.text,
-          },
-        ],
-      }),
-      { headers: { "Content-Type": "application/json" } }
-    )
+    return NextResponse.json({
+      messages: [
+        {
+          id: Date.now().toString(),
+          role: "assistant",
+          content: result.text,
+        },
+      ],
+    })
   } catch (error) {
-    console.error("Chat route failed:", error)
-    return new Response(
-      JSON.stringify({
+    console.error("❌ Chat route failed:", error)
+    return NextResponse.json(
+      {
         messages: [
           {
             role: "assistant",
-            content:
-              "⚠️ Sorry, I couldn’t process your request. Please check your configuration.",
+            content: "⚠️ Sorry, I couldn’t process your request. Please check your configuration.",
           },
         ],
-      }),
-      { headers: { "Content-Type": "application/json" }, status: 500 }
+      },
+      { status: 500 },
     )
   }
 }
